@@ -1,0 +1,360 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// ENUMS
+// ==========================================
+
+enum SubscriptionPlan {
+  FREE
+  CREATOR
+  PRO
+  BUSINESS
+}
+
+enum JobStatus {
+  QUEUED
+  RESEARCHING
+  SCRIPTING
+  GENERATING
+  RENDERING
+  READY
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+}
+
+enum ContentType {
+  LONG_VIDEO
+  SHORT
+  REEL
+  CAROUSEL
+  POST
+}
+
+enum Platform {
+  YOUTUBE
+  INSTAGRAM
+  TIKTOK
+  FACEBOOK
+}
+
+// ==========================================
+// USERS & AUTH
+// ==========================================
+
+model User {
+  id              String   @id @default(cuid())
+  name            String?
+  email           String   @unique
+  emailVerified   DateTime?
+  image           String?
+  passwordHash    String?
+  role            String   @default("user")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  subscription       Subscription?
+  automationSettings AutomationSettings?
+  channels           Channel[]
+  contentPackages    ContentPackage[]
+  notifications      Notification[]
+  usageRecords       UsageRecord[]
+  errorLogs          ErrorLog[]
+  templates          Template[]
+
+  @@index([email])
+}
+
+model Subscription {
+  id                String           @id @default(cuid())
+  userId            String           @unique
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan              SubscriptionPlan @default(FREE)
+  stripeCustomerId  String?
+  stripeSubId       String?
+  currentPeriodEnd  DateTime?
+  videosUsed        Int              @default(0)
+  imagesUsed        Int              @default(0)
+  voiceMinUsed      Float            @default(0)
+  storageUsedBytes  BigInt           @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+// ==========================================
+// SOCIAL CONNECTIONS
+// ==========================================
+
+model Channel {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform     Platform
+  accountId    String
+  handle       String
+  accessToken  String   // encrypted
+  refreshToken String?  // encrypted
+  tokenExpiry  DateTime?
+  followers    Int      @default(0)
+  connected    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  publishingJobs PublishingJob[]
+
+  @@unique([userId, platform])
+  @@index([userId])
+}
+
+// ==========================================
+// AUTOMATION
+// ==========================================
+
+model AutomationSettings {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enabled      Boolean  @default(false)
+  niche        String   @default("AI & Technology")
+  language     String   @default("English")
+  frequency    Int      @default(1)
+  postingTime  String   @default("09:00")
+  timezone     String   @default("Asia/Kolkata")
+  activeDays   String[] @default(["Monday","Tuesday","Wednesday","Thursday","Friday"])
+  contentTypes String[]
+  platforms    String[]
+  topicSource  String   @default("ai_research")
+  qualityCheck Boolean  @default(true)
+  autoRetry    Boolean  @default(true)
+  voiceId      String   @default("alloy")
+  videoStyle   String   @default("Cinematic Dark")
+  updatedAt    DateTime @updatedAt
+}
+
+// ==========================================
+// CONTENT
+// ==========================================
+
+model ContentPackage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic     String
+  niche     String
+  language  String
+  status    JobStatus @default(QUEUED)
+  progress  Int      @default(0)
+  logs      String[]
+  error     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contentItems   ContentItem[]
+  publishingJobs PublishingJob[]
+  analytics      Analytics[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model ContentItem {
+  id               String        @id @default(cuid())
+  packageId        String
+  package          ContentPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  type             ContentType
+  platform         Platform
+  status           JobStatus     @default(QUEUED)
+  progress         Int           @default(0)
+  title            String
+  description      String?
+  hashtags         String[]
+  videoUrl         String?
+  thumbnailUrl     String?
+  carouselUrls     String[]
+  shortUrl         String?
+  scheduledAt      DateTime?
+  publishedAt      DateTime?
+  platformPostId   String?
+  platformPostUrl  String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  video     Video?
+  carousel  Carousel?
+  thumbnail Thumbnail?
+  script    Script?
+
+  @@index([packageId])
+  @@index([status])
+}
+
+model Script {
+  id            String      @id @default(cuid())
+  contentItemId String      @unique
+  contentItem   ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  hookText      String
+  fullText      String
+  cta           String
+  scenes        VideoScene[]
+  createdAt     DateTime    @default(now())
+}
+
+model VideoScene {
+  id          String   @id @default(cuid())
+  scriptId    String
+  script      Script   @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  order       Int
+  narration   String
+  visualPrompt String
+  duration    Int      // seconds
+  imageUrl    String?
+  audioUrl    String?
+  clipUrl     String?
+}
+
+model Video {
+  id            String      @id @default(cuid())
+  contentItemId String      @unique
+  contentItem   ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  operationId   String?
+  storageKey    String?
+  duration      Int?
+  resolution    String?
+  aspectRatio   String?
+  fileSize      BigInt?
+  createdAt     DateTime    @default(now())
+}
+
+model Carousel {
+  id            String          @id @default(cuid())
+  contentItemId String          @unique
+  contentItem   ContentItem     @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  slides        CarouselSlide[]
+  createdAt     DateTime        @default(now())
+}
+
+model CarouselSlide {
+  id          String   @id @default(cuid())
+  carouselId  String
+  carousel    Carousel @relation(fields: [carouselId], references: [id], onDelete: Cascade)
+  order       Int
+  headline    String
+  body        String
+  imageUrl    String?
+  imagePrompt String?
+  ctaText     String?
+}
+
+model Thumbnail {
+  id            String      @id @default(cuid())
+  contentItemId String      @unique
+  contentItem   ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  variants      String[]    // Multiple URLs
+  selected      String?
+  style         String?
+}
+
+// ==========================================
+// PUBLISHING
+// ==========================================
+
+model PublishingJob {
+  id         String          @id @default(cuid())
+  packageId  String
+  package    ContentPackage  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  channelId  String
+  channel    Channel         @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  status     JobStatus       @default(QUEUED)
+  scheduledAt DateTime?
+  publishedAt DateTime?
+  result     Json?
+  error      String?
+  retries    Int             @default(0)
+  createdAt  DateTime        @default(now())
+
+  @@index([channelId])
+  @@index([scheduledAt])
+}
+
+// ==========================================
+// ANALYTICS
+// ==========================================
+
+model Analytics {
+  id         String         @id @default(cuid())
+  packageId  String
+  package    ContentPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  platform   Platform
+  views      BigInt         @default(0)
+  likes      Int            @default(0)
+  comments   Int            @default(0)
+  shares     Int            @default(0)
+  watchTime  Int            @default(0) // seconds
+  savedAt    DateTime       @default(now())
+
+  @@index([packageId, platform])
+}
+
+// ==========================================
+// MISC
+// ==========================================
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name        String
+  type        ContentType
+  config      Json
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model UsageRecord {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // 'video', 'image', 'voice', 'storage'
+  amount      Float
+  createdAt   DateTime @default(now())
+
+  @@index([userId, type])
+}
+
+model ErrorLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  jobId     String?
+  service   String
+  message   String
+  stack     String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
