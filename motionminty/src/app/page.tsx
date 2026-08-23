@@ -30,7 +30,7 @@ export default function LandingPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg,var(--purple-600),var(--blue-500))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>⚡</div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 15, lineHeight: 1 }}>MotionMint-y</div>
+            <div style={{ fontWeight: 800, fontSize: 15, lineHeight: 1 }}>Auto Creator</div>
             <div style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: 1 }}>AI CONTENT FACTORY</div>
           </div>
         </div>
@@ -49,7 +49,7 @@ export default function LandingPage() {
           <span>Auto Published.</span>
         </h1>
         <p style={{ fontSize: 18, color: 'var(--text-secondary)', maxWidth: 600, margin: '0 auto 40px', lineHeight: 1.7 }}>
-          Set up your niche once. MotionMint-y researches topics, creates videos, carousels, shorts, and social posts — then publishes them to all your platforms automatically.
+          Set up your niche once. Auto Creator researches topics, creates videos, carousels, shorts, and social posts — then publishes them to all your platforms automatically.
         </p>
         <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link href="/register" className="btn btn-primary btn-xl" style={{ fontSize: 16 }}>🚀 Start Free Today</Link>
@@ -115,9 +115,9 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer style={{ borderTop: '1px solid var(--border-primary)', padding: '32px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-        <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>⚡ MotionMint-y</div>
+        <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>⚡ Auto Creator</div>
         <p>AI Content Factory · Set it once, publish everywhere</p>
-        <p style={{ marginTop: 8 }}>© 2026 MotionMint-y. All rights reserved.</p>
+        <p style={{ marginTop: 8 }}>© 2026 Auto Creator. All rights reserved.</p>
       </footer>
     </div>
   );

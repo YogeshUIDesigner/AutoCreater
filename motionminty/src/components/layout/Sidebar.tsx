@@ -5,7 +5,8 @@ import { useState } from 'react';
 
 const NAV_ITEMS = [
   { href: '/dashboard', icon: '⊞', label: 'Dashboard' },
-  { href: '/create', icon: '✦', label: 'Create Content', badge: 'NEW' },
+  { href: '/workspaces', icon: '🏠', label: 'My Rooms', badge: 'NEW' },
+  { href: '/create', icon: '✦', label: 'Create Content' },
   { href: '/templates', icon: '◈', label: 'AI Templates' },
   { href: '/queue', icon: '≡', label: 'Content Queue', count: 12 },
   { href: '/automation', icon: '⚙', label: 'Automation' },
@@ -15,6 +16,7 @@ const NAV_ITEMS = [
   { href: '/calendar', icon: '▦', label: 'Calendar' },
   { href: '/analytics', icon: '↗', label: 'Analytics' },
   { divider: true },
+  { href: '/providers', icon: '🧠', label: 'AI Providers' },
   { href: '/settings', icon: '◌', label: 'Settings' },
   { href: '/billing', icon: '◈', label: 'Billing', badge: 'PRO' },
   { href: '/help', icon: '?', label: 'Help & Support' },
@@ -24,6 +26,8 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [automationOn] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
+  // Active room indicator (would come from global state in production)
+  const [activeRoom] = useState({ name: 'Motivation Hub', emoji: '💪', color: '#7c3aed' });
 
   return (
     <aside style={{
@@ -44,7 +48,7 @@ export default function Sidebar() {
         <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg,var(--purple-600),var(--blue-500))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>⚡</div>
         {!collapsed && (
           <div style={{ overflow: 'hidden' }}>
-            <div style={{ fontWeight: 800, fontSize: 14, whiteSpace: 'nowrap' }}>MotionMint-y</div>
+            <div style={{ fontWeight: 800, fontSize: 14, whiteSpace: 'nowrap' }}>Auto Creator</div>
             <div style={{ fontSize: 8, color: 'var(--text-muted)', letterSpacing: 1, whiteSpace: 'nowrap' }}>AI CONTENT FACTORY</div>
           </div>
         )}
@@ -53,9 +57,21 @@ export default function Sidebar() {
         </button>
       </div>
 
+      {/* Active Room indicator */}
+      {!collapsed && (
+        <Link href="/workspaces" style={{ margin: '10px 10px 0', padding: '8px 12px', background: `${activeRoom.color}15`, borderRadius: 'var(--radius-md)', border: `1px solid ${activeRoom.color}40`, display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+          <div style={{ width: 22, height: 22, borderRadius: 6, background: activeRoom.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>{activeRoom.emoji}</div>
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', lineHeight: 1 }}>ACTIVE ROOM</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: activeRoom.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeRoom.name}</div>
+          </div>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>›</span>
+        </Link>
+      )}
+
       {/* Automation status pill */}
       {!collapsed && (
-        <div style={{ margin: '12px 10px', padding: '8px 12px', background: automationOn ? 'rgba(34,197,94,0.1)' : 'rgba(100,116,139,0.1)', borderRadius: 'var(--radius-md)', border: `1px solid ${automationOn ? 'rgba(34,197,94,0.3)' : 'var(--border-primary)'}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ margin: '8px 10px', padding: '8px 12px', background: automationOn ? 'rgba(34,197,94,0.1)' : 'rgba(100,116,139,0.1)', borderRadius: 'var(--radius-md)', border: `1px solid ${automationOn ? 'rgba(34,197,94,0.3)' : 'var(--border-primary)'}`, display: 'flex', alignItems: 'center', gap: 8 }}>
           <span className={`status-dot ${automationOn ? 'active' : 'idle'}`} />
           <span style={{ fontSize: 12, fontWeight: 600, color: automationOn ? 'var(--green-400)' : 'var(--text-muted)' }}>
             Automation {automationOn ? 'ON' : 'OFF'}

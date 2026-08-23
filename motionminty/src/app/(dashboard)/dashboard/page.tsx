@@ -40,8 +40,8 @@ const RECENT = [
 ];
 
 const PLATFORMS_STATUS = [
-  { name: 'YouTube', icon: '▶️', connected: true, handle: '@motionminty', color: '#ff4444' },
-  { name: 'Instagram', icon: '📸', connected: true, handle: '@motionminty', color: '#e1306c' },
+  { name: 'YouTube', icon: '▶️', connected: true, handle: '@AutoCreator', color: '#ff4444' },
+  { name: 'Instagram', icon: '📸', connected: true, handle: '@autocreator_ai', color: '#e1306c' },
   { name: 'TikTok', icon: '🎵', connected: false, handle: '', color: '#ffffff' },
   { name: 'Facebook', icon: '👍', connected: false, handle: '', color: '#1877f2' },
 ];

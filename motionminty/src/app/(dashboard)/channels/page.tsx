@@ -4,13 +4,13 @@ import { useState } from 'react';
 const PLATFORMS = [
   {
     id: 'youtube', name: 'YouTube', icon: '▶️', color: '#ff4444',
-    connected: true, handle: '@MotionMinty', followers: '14.2K',
+    connected: true, handle: '@AutoCreator', followers: '14.2K',
     features: ['Long Video','Short','Thumbnail','Description','Tags'],
     limitations: [],
   },
   {
     id: 'instagram', name: 'Instagram', icon: '📸', color: '#e1306c',
-    connected: true, handle: '@motionminty_ai', followers: '8.7K',
+    connected: true, handle: '@autocreator_ai', followers: '8.7K',
     features: ['Carousel','Reel','Story','Caption','Hashtags'],
     limitations: ['Direct video upload requires approval'],
   },
@@ -45,7 +45,7 @@ export default function ChannelsPage() {
   function connect(id: string) {
     // In production: trigger OAuth flow
     setTimeout(() => {
-      setPlatforms(prev => prev.map(p => p.id === id ? { ...p, connected: true, handle: `@motionminty`, followers: '0' } : p));
+      setPlatforms(prev => prev.map(p => p.id === id ? { ...p, connected: true, handle: `@autocreator`, followers: '0' } : p));
     }, 500);
   }
 

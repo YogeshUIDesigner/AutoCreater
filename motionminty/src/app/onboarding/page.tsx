@@ -226,7 +226,7 @@ export default function OnboardingPage() {
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ fontSize: 28, marginBottom: 8 }}>⚡</div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>MotionMint-y Setup</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Auto Creator Setup</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Step {step + 1} of {STEPS.length} — {STEPS[step].label}</p>
         </div>
 

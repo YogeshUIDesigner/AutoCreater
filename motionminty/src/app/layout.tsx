@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "MotionMint-y – AI Content Factory", template: "%s | MotionMint-y" },
+  title: { default: "Auto Creator – AI Content Factory", template: "%s | Auto Creator" },
   description: "AI-powered content automation platform. Set it once. Let AI create and publish your content automatically.",
   keywords: ["AI content creation", "content automation", "video generation", "social media automation"],
   openGraph: {
-    title: "MotionMint-y – AI Content Factory",
+    title: "Auto Creator – AI Content Factory",
     description: "One topic → Complete content package → Automatic publishing",
     type: "website",
   },

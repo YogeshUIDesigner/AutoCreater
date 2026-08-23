@@ -4,39 +4,60 @@
  * Veo: Google Veo 3.1 via Gemini API (requires GEMINI_API_KEY and billing).
  */
 import type { VideoProvider, VideoSettings, VideoOperationStatus, ScriptScene } from '../providers';
+import { runVideoEngine } from './engine/index';
+import path from 'path';
+import fs from 'fs';
 
 const DELAY = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-export class MockVideoProvider implements VideoProvider {
-  private jobs: Map<string, { progress: number; started: number }> = new Map();
+export class FFmpegVideoEngine implements VideoProvider {
+  private jobs: Map<string, { progress: number; status: 'processing' | 'completed' | 'failed'; videoUrl?: string }> = new Map();
 
   async generateVideo(scenes: ScriptScene[], settings: VideoSettings): Promise<{ operationId: string }> {
-    const operationId = `mock_video_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    this.jobs.set(operationId, { progress: 0, started: Date.now() });
+    const operationId = `engine_${Date.now()}`;
+    this.jobs.set(operationId, { progress: 0, status: 'processing' });
+
+    // Combine all scene text to form the full script
+    const fullScript = scenes.map(s => s.narratorText).join('. ');
+    const keywords = scenes.map(s => s.visualPrompt);
+    const format = settings.aspectRatio === '9:16' ? 'shorts' : 'long';
+
+    // Start engine asynchronously in the background
+    runVideoEngine({ operationId, script: fullScript, keywords, format })
+      .then((finalPath) => {
+        // Update job as completed. (We return the local path, in production this should be a public URL).
+        this.jobs.set(operationId, { progress: 100, status: 'completed', videoUrl: finalPath });
+      })
+      .catch((err) => {
+        console.error('[VideoProvider] Engine failed:', err);
+        this.jobs.set(operationId, { progress: 0, status: 'failed' });
+      });
+
     return { operationId };
   }
 
   async checkStatus(operationId: string): Promise<VideoOperationStatus> {
-    await DELAY(300);
     const job = this.jobs.get(operationId);
     if (!job) return { status: 'failed', progress: 0, error: 'Job not found' };
 
-    const elapsed = (Date.now() - job.started) / 1000; // seconds
-    const progress = Math.min(100, Math.floor(elapsed * 5)); // 5% per second, done in 20s
-    this.jobs.set(operationId, { ...job, progress });
-
-    if (progress >= 100) {
-      return {
-        status: 'completed',
-        progress: 100,
-        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-      };
+    // Simulate progress while it's processing
+    if (job.status === 'processing') {
+      const newProgress = Math.min(95, job.progress + 5);
+      this.jobs.set(operationId, { ...job, progress: newProgress });
+      return { status: 'processing', progress: newProgress };
     }
-    return { status: 'processing', progress };
+
+    if (job.status === 'completed') {
+      return { status: 'completed', progress: 100, videoUrl: job.videoUrl };
+    }
+
+    return { status: 'failed', progress: 0, error: 'Engine rendering failed' };
   }
 
   async downloadVideo(operationId: string): Promise<string> {
-    return 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+    const job = this.jobs.get(operationId);
+    if (!job || !job.videoUrl) throw new Error('Video not ready or job failed');
+    return job.videoUrl;
   }
 }
 
@@ -72,7 +93,7 @@ export class VeoProvider implements VideoProvider {
 
 export function createVideoProvider(): VideoProvider {
   if (process.env.MOCK_PROVIDERS === 'true' || !process.env.GEMINI_API_KEY) {
-    return new MockVideoProvider();
+    return new FFmpegVideoEngine();
   }
   return new VeoProvider(process.env.GEMINI_API_KEY!);
 }

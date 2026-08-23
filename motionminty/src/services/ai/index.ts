@@ -46,7 +46,7 @@ export class MockAIProvider implements AIProvider {
     await DELAY();
     return {
       seoTitle: `${title} | Complete Guide 2026`,
-      description: `${description}\n\n🔔 Subscribe for daily AI content\n📧 Business inquiries: contact@motionminty.ai\n\n#AI #ArtificialIntelligence #Technology #Productivity`,
+      description: `${description}\n\n🔔 Subscribe for daily AI content\n📧 Business inquiries: contact@autocreator.ai\n\n#AI #ArtificialIntelligence #Technology #Productivity`,
       tags: ['AI', 'Technology', 'Productivity', 'Tutorial', '2026', 'Artificial Intelligence', 'Machine Learning'],
       hashtags: ['#AI', '#ArtificialIntelligence', '#Tech', '#Productivity', '#ContentCreation', '#Automation'],
     };

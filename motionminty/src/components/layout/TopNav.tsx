@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 
 const BREADCRUMBS: Record<string, string> = {
   '/dashboard': 'Dashboard',
+  '/workspaces': 'My Rooms',
   '/create': 'Create Content',
   '/templates': 'AI Templates',
   '/queue': 'Content Queue',
@@ -13,6 +14,7 @@ const BREADCRUMBS: Record<string, string> = {
   '/posts': 'Social Posts',
   '/calendar': 'Calendar',
   '/analytics': 'Analytics',
+  '/providers': 'AI Providers',
   '/settings': 'Settings',
   '/billing': 'Billing',
   '/help': 'Help & Support',

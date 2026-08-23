@@ -23,7 +23,7 @@ export default function SettingsPage() {
           </div>
           <div className="form-group">
             <label className="form-label">Email</label>
-            <input className="form-input" type="email" defaultValue="john@motionminty.ai" />
+            <input className="form-input" type="email" defaultValue="john@autocreator.ai" />
           </div>
         </div>
         <div className="form-group">
@@ -49,7 +49,7 @@ export default function SettingsPage() {
         <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>These settings apply to all generated content — videos, carousels, thumbnails.</p>
         <div className="form-group">
           <label className="form-label">Brand Name</label>
-          <input className="form-input" defaultValue="MotionMinty" />
+          <input className="form-input" defaultValue="Auto Creator" />
         </div>
         <div className="form-group">
           <label className="form-label">Logo (URL or upload)</label>
@@ -82,7 +82,7 @@ export default function SettingsPage() {
         </div>
         <div className="form-group">
           <label className="form-label">Watermark text</label>
-          <input className="form-input" defaultValue="@MotionMinty" />
+          <input className="form-input" defaultValue="@AutoCreator" />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div className="form-group">

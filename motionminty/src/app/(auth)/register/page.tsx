@@ -22,7 +22,7 @@ export default function RegisterPage() {
           <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 40 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,var(--purple-600),var(--blue-500))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>⚡</div>
             <div>
-              <div style={{ fontWeight: 800, fontSize: 16 }}>MotionMint-y</div>
+              <div style={{ fontWeight: 800, fontSize: 16 }}>Auto Creator</div>
               <div style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: 1 }}>AI CONTENT FACTORY</div>
             </div>
           </Link>
