@@ -51,8 +51,8 @@ export async function renderFinalVideo(options: RenderOptions): Promise<string> 
     const concatInputs = videoPaths.map((_, i) => `[v${i}]`).join('');
     filterParts.push(`${concatInputs}concat=n=${videoPaths.length}:v=1:a=0[vout]`);
 
-    // 4. Set filter complex
-    command.complexFilter(filterParts, ['vout']);
+    // 4. Set filter complex (join all parts with a semicolon so it's one filtergraph)
+    command.complexFilter(filterParts.join('; '));
 
     // 5. Output options
     command

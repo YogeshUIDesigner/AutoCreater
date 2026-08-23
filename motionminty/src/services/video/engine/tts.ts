@@ -45,36 +45,51 @@ export async function generateTTS(text: string, outputPath: string): Promise<{ a
   }
 
   // Real ElevenLabs API call
-  // Using default voice: Adam (pNInz6obpgDQGcFmaJcg)
-  const voiceId = 'pNInz6obpgDQGcFmaJcg';
+  // Using default voice: Rachel (21m00Tcm4TlvDq8ikWAM)
+  const voiceId = '21m00Tcm4TlvDq8ikWAM';
   const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
   
   console.log(`[TTS] Requesting ElevenLabs audio for: "${text.substring(0, 30)}..."`);
   
-  const response = await axios.post(url, {
-    text,
-    model_id: 'eleven_monolingual_v1',
-    voice_settings: {
-      stability: 0.5,
-      similarity_boost: 0.5,
-    }
-  }, {
-    headers: {
-      'Accept': 'audio/mpeg',
-      'xi-api-key': apiKey,
-      'Content-Type': 'application/json',
-    },
-    responseType: 'stream',
-  });
+  try {
+    const response = await axios.post(url, {
+      text,
+      model_id: 'eleven_monolingual_v1',
+      voice_settings: {
+        stability: 0.5,
+        similarity_boost: 0.5,
+      }
+    }, {
+      headers: {
+        'Accept': 'audio/mpeg',
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      responseType: 'stream',
+    });
 
-  const writer = fs.createWriteStream(outputPath);
-  response.data.pipe(writer);
+    const writer = fs.createWriteStream(outputPath);
+    response.data.pipe(writer);
 
-  await new Promise((resolve, reject) => {
-    writer.on('finish', resolve);
-    writer.on('error', reject);
-  });
+    await new Promise((resolve, reject) => {
+      writer.on('finish', resolve);
+      writer.on('error', reject);
+    });
 
-  const duration = await getMediaDuration(outputPath);
-  return { audioPath: outputPath, duration };
+    const duration = await getMediaDuration(outputPath);
+    return { audioPath: outputPath, duration };
+  } catch (error: any) {
+    console.error(`[TTS] ElevenLabs API failed (${error?.response?.status || error.message}). Falling back to dummy audio.`);
+    
+    // Fallback to dummy silent audio
+    return new Promise((resolve, reject) => {
+      ffmpeg()
+        .input('anullsrc=r=44100:cl=stereo')
+        .inputFormat('lavfi')
+        .duration(4) 
+        .save(outputPath)
+        .on('end', () => resolve({ audioPath: outputPath, duration: 4 }))
+        .on('error', reject);
+    });
+  }
 }
