@@ -89,8 +89,6 @@ export class GeminiProvider implements AIProvider {
 
 // Factory — reads from environment
 export function createAIProvider(): AIProvider {
-  if (process.env.MOCK_PROVIDERS === 'true' || !process.env.GEMINI_API_KEY) {
-    return new MockAIProvider();
-  }
-  return new GeminiProvider(process.env.GEMINI_API_KEY!);
+  // Always use Mock for testing until Gemini is implemented
+  return new MockAIProvider();
 }

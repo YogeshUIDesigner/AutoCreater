@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { signOut } from 'next-auth/react';
 
 const NAV_ITEMS = [
   { href: '/dashboard', icon: '⊞', label: 'Dashboard' },
@@ -123,7 +124,10 @@ export default function Sidebar() {
             <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>User</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Pro Plan</div>
           </div>
-          <Link href="/settings" style={{ color: 'var(--text-muted)', fontSize: 14, padding: 4, borderRadius: 4 }}>⚙</Link>
+          <Link href="/settings" style={{ color: 'var(--text-muted)', fontSize: 14, padding: 4, borderRadius: 4, textDecoration: 'none' }} title="Settings">⚙</Link>
+          <button onClick={() => signOut()} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 14, padding: 4, borderRadius: 4, cursor: 'pointer' }} title="Sign Out">
+            🚪
+          </button>
         </div>
       )}
     </aside>

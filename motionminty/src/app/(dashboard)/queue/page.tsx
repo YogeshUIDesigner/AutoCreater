@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const STATUS_COLORS: Record<string, string> = {
   QUEUED: 'badge-gray', RESEARCHING: 'badge-blue', SCRIPTING: 'badge-blue',
@@ -7,24 +7,35 @@ const STATUS_COLORS: Record<string, string> = {
   SCHEDULED: 'badge-orange', PUBLISHING: 'badge-orange', PUBLISHED: 'badge-green', FAILED: 'badge-red',
 };
 
-const MOCK_ITEMS = [
-  { id: 1, title: '5 AI Tools That Replace Employees in 2026', type: 'Long Video', platform: '▶️ YouTube', status: 'GENERATING', progress: 65, time: 'Generating...', thumbnail: null },
-  { id: 2, title: '5 AI Tools That Replace Employees in 2026', type: 'Carousel', platform: '📸 Instagram', status: 'QUEUED', progress: 0, time: 'Queued', thumbnail: null },
-  { id: 3, title: '5 AI Tools That Replace Employees in 2026', type: 'Short', platform: '🎵 TikTok', status: 'QUEUED', progress: 0, time: 'Queued', thumbnail: null },
-  { id: 4, title: 'How Gemini 2.0 Changes Everything', type: 'Long Video', platform: '▶️ YouTube', status: 'SCHEDULED', progress: 100, time: 'Today 9:00 AM', thumbnail: null },
-  { id: 5, title: 'ChatGPT vs Claude vs Gemini', type: 'Carousel', platform: '📸 Instagram', status: 'PUBLISHED', progress: 100, time: '2h ago', thumbnail: null },
-  { id: 6, title: 'Best AI Image Generators 2026', type: 'Short', platform: '▶️ YouTube', status: 'PUBLISHED', progress: 100, time: '5h ago', thumbnail: null },
-  { id: 7, title: 'AI Voiceover Tools Compared', type: 'Long Video', platform: '▶️ YouTube', status: 'FAILED', progress: 34, time: 'Failed 1h ago', thumbnail: null },
-  { id: 8, title: 'Top 10 Productivity Apps with AI', type: 'Carousel', platform: '📸 Instagram', status: 'READY', progress: 100, time: 'Ready to publish', thumbnail: null },
-  { id: 9, title: 'Make Money with AI 2026', type: 'Long Video', platform: '▶️ YouTube', status: 'SCRIPTING', progress: 25, time: 'Writing script...', thumbnail: null },
-  { id: 10, title: 'AI Research Tools for Students', type: 'Short', platform: '📱 Instagram', status: 'RENDERING', progress: 80, time: 'Rendering video...', thumbnail: null },
-];
-
 const TABS = ['All', 'Queued', 'Generating', 'Ready', 'Scheduled', 'Publishing', 'Published', 'Failed'];
 
 export default function QueuePage() {
   const [activeTab, setActiveTab] = useState('All');
-  const [items, setItems] = useState(MOCK_ITEMS);
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    
+    async function fetchJobs() {
+      try {
+        const res = await fetch('/api/content/create');
+        if (res.ok && mounted) {
+          const data = await res.json();
+          // Sort newest first
+          setItems((data.jobs || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+        }
+      } catch (err) {
+        console.error('Failed to fetch jobs', err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    fetchJobs();
+    const interval = setInterval(fetchJobs, 2000); // Poll every 2 seconds
+    return () => { mounted = false; clearInterval(interval); };
+  }, []);
 
   const filtered = activeTab === 'All' ? items : items.filter(i => {
     const s = i.status;
@@ -50,12 +61,30 @@ export default function QueuePage() {
     return false;
   }).length;
 
-  function retry(id: number) {
-    setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'QUEUED', progress: 0 } : i));
+  async function retry(id: string) {
+    try {
+      // Optimistic update
+      setItems(prev => prev.map(i => i.id === id ? { ...i, status: 'QUEUED', progress: 0 } : i));
+      const res = await fetch('/api/content/retry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId: id })
+      });
+      if (!res.ok) {
+        throw new Error('Failed to retry');
+      }
+    } catch (err) {
+      alert('Failed to retry the job. Please check logs.');
+    }
   }
 
-  function deleteItem(id: number) {
+  function deleteItem(id: string) {
     setItems(prev => prev.filter(i => i.id !== id));
+    // Should call API to delete from mockStore/DB
+  }
+
+  if (loading && items.length === 0) {
+    return <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Loading queue...</div>;
   }
 
   return (
@@ -83,23 +112,23 @@ export default function QueuePage() {
             <div key={item.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px', ...(item.status === 'FAILED' ? { border: '1px solid rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.02)' } : {}) }}>
               {/* Thumbnail */}
               <div style={{ width: 80, height: 52, borderRadius: 'var(--radius-sm)', background: `linear-gradient(135deg, ${item.status === 'FAILED' ? '#ef444430, #1a0a0a' : 'var(--purple-600)30, var(--bg-secondary)'})`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, border: '1px solid var(--border-primary)' }}>
-                {item.type === 'Long Video' ? '🎬' : item.type === 'Carousel' ? '🖼️' : '📱'}
+                {item.contentTypes?.[0] === 'long_video' ? '🎬' : item.contentTypes?.[0] === 'carousel' ? '🖼️' : '📝'}
               </div>
 
               {/* Info */}
               <div style={{ flex: 1, overflow: 'hidden' }}>
                 <div style={{ fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4 }}>{item.title}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.type}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.contentTypes?.join(', ') || 'Content'}</span>
                   <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>·</span>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.platform}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.platforms?.join(', ') || 'Platform'}</span>
                   <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>·</span>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.time}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{item.logs?.[item.logs.length - 1]?.split('] ')[1] || 'Queued'}</span>
                 </div>
                 {item.progress > 0 && item.progress < 100 && (
                   <div style={{ marginTop: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>
-                      <span>{item.time}</span><span>{item.progress}%</span>
+                      <span>Progress</span><span>{item.progress}%</span>
                     </div>
                     <div className="progress-bar"><div className="progress-bar-fill" style={{ width: `${item.progress}%` }} /></div>
                   </div>
@@ -107,7 +136,7 @@ export default function QueuePage() {
               </div>
 
               {/* Status */}
-              <span className={`badge ${STATUS_COLORS[item.status]}`} style={{ flexShrink: 0 }}>{item.status}</span>
+              <span className={`badge ${STATUS_COLORS[item.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>{item.status}</span>
 
               {/* Actions */}
               <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>

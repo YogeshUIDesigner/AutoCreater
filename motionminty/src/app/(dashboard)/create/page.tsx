@@ -28,7 +28,7 @@ export default function CreatePage() {
   const [step, setStep] = useState(0);
   const [generating, setGenerating] = useState(false);
   const [form, setForm] = useState({
-    topic: '', niche: '', language: 'English', tone: 'Professional', audience: '',
+    topic: '', customPrompt: '', niche: '', language: 'English', tone: 'Professional', audience: '',
     contentTypes: ['long_video', 'short', 'carousel'],
     videoDuration: '10', aiVoice: AI_VOICES[0], voiceGender: 'Neutral', voiceStyle: 'Natural',
     videoStyle: VIDEO_STYLES[0], resolution: RESOLUTIONS[1], aspectRatio: RATIOS[0],
@@ -49,8 +49,23 @@ export default function CreatePage() {
 
   async function handleGenerate() {
     setGenerating(true);
-    await new Promise(r => setTimeout(r, 2000));
-    router.push('/queue');
+    try {
+      const res = await fetch('/api/content/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        router.push('/queue');
+      } else {
+        alert('Failed to generate content. Check logs.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error generating content');
+    } finally {
+      setGenerating(false);
+    }
   }
 
   const stepContent = [
@@ -64,6 +79,11 @@ export default function CreatePage() {
         <label className="form-label">Topic / Title *</label>
         <input className="form-input" placeholder="e.g. 5 AI Tools That Will Replace Jobs in 2026" value={form.topic} onChange={e => setForm(p => ({ ...p, topic: e.target.value }))} style={{ fontSize: 16 }} />
         <span className="form-hint">Be specific for better results. AI will research and expand on this.</span>
+      </div>
+      <div className="form-group">
+        <label className="form-label">Custom Instructions / Prompt (Optional)</label>
+        <textarea className="form-input" placeholder="e.g. Always use a highly energetic tone, don't use emojis, and end with a question..." value={form.customPrompt} onChange={e => setForm(p => ({ ...p, customPrompt: e.target.value }))} rows={3} />
+        <span className="form-hint">Give specific guidelines for this post.</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div className="form-group">
@@ -286,33 +306,49 @@ export default function CreatePage() {
     </div>,
   ];
 
+  // Determine which steps to show based on selected content types
+  const hasVideo = form.contentTypes.some(t => ['long_video', 'short', 'reel'].includes(t));
+  const hasCarousel = form.contentTypes.includes('carousel');
+
+  const visibleSteps = [
+    { id: 'topic', label: 'Topic', content: stepContent[0] },
+    { id: 'types', label: 'Content Types', content: stepContent[1] },
+  ];
+  if (hasVideo) visibleSteps.push({ id: 'video', label: 'Video Settings', content: stepContent[2] });
+  if (hasCarousel) visibleSteps.push({ id: 'carousel', label: 'Carousel Settings', content: stepContent[3] });
+  visibleSteps.push({ id: 'platforms', label: 'Platforms', content: stepContent[4] });
+  visibleSteps.push({ id: 'schedule', label: 'Schedule', content: stepContent[5] });
+
+  // Ensure step index is valid
+  const currentStep = step >= visibleSteps.length ? visibleSteps.length - 1 : step;
+
   return (
     <div style={{ maxWidth: 800, animation: 'fadeIn 0.4s ease' }}>
       {/* Step indicator */}
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 32 }}>
-        {STEPS.map((s, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', flex: i < STEPS.length - 1 ? 1 : undefined }}>
+        {visibleSteps.map((s, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', flex: i < visibleSteps.length - 1 ? 1 : undefined }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, border: `2px solid ${i < step ? 'var(--green-500)' : i === step ? 'var(--purple-600)' : 'var(--border-primary)'}`, background: i < step ? 'var(--green-500)' : i === step ? 'var(--purple-600)' : 'var(--bg-input)', color: i <= step ? '#fff' : 'var(--text-muted)', transition: 'all 0.3s', cursor: i < step ? 'pointer' : 'default' }} onClick={() => i < step && setStep(i)}>
-                {i < step ? '✓' : i + 1}
+              <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, border: `2px solid ${i < currentStep ? 'var(--green-500)' : i === currentStep ? 'var(--purple-600)' : 'var(--border-primary)'}`, background: i < currentStep ? 'var(--green-500)' : i === currentStep ? 'var(--purple-600)' : 'var(--bg-input)', color: i <= currentStep ? '#fff' : 'var(--text-muted)', transition: 'all 0.3s', cursor: i < currentStep ? 'pointer' : 'default' }} onClick={() => i < currentStep && setStep(i)}>
+                {i < currentStep ? '✓' : i + 1}
               </div>
-              <span style={{ fontSize: 10, color: i === step ? 'var(--purple-400)' : 'var(--text-muted)', whiteSpace: 'nowrap', fontWeight: i === step ? 600 : 400 }}>{s}</span>
+              <span style={{ fontSize: 10, color: i === currentStep ? 'var(--purple-400)' : 'var(--text-muted)', whiteSpace: 'nowrap', fontWeight: i === currentStep ? 600 : 400 }}>{s.label}</span>
             </div>
-            {i < STEPS.length - 1 && <div style={{ flex: 1, height: 1, background: i < step ? 'var(--green-500)' : 'var(--border-primary)', margin: '0 6px', marginBottom: 20, transition: 'background 0.3s' }} />}
+            {i < visibleSteps.length - 1 && <div style={{ flex: 1, height: 1, background: i < currentStep ? 'var(--green-500)' : 'var(--border-primary)', margin: '0 6px', marginBottom: 20, transition: 'background 0.3s' }} />}
           </div>
         ))}
       </div>
 
       {/* Step content */}
       <div className="card" style={{ marginBottom: 24, animation: 'fadeIn 0.3s ease' }}>
-        {stepContent[step]}
+        {visibleSteps[currentStep].content}
       </div>
 
       {/* Navigation */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button className="btn btn-secondary" onClick={() => setStep(s => s - 1)} disabled={step === 0}>← Back</button>
-        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Step {step + 1} of {STEPS.length}</span>
-        {step < STEPS.length - 1 ? (
+        <button className="btn btn-secondary" onClick={() => setStep(s => s - 1)} disabled={currentStep === 0}>← Back</button>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Step {currentStep + 1} of {visibleSteps.length}</span>
+        {currentStep < visibleSteps.length - 1 ? (
           <button className="btn btn-primary" onClick={() => setStep(s => s + 1)}>Continue →</button>
         ) : (
           <button className="btn btn-primary btn-lg" onClick={handleGenerate} disabled={generating} style={{ background: 'linear-gradient(135deg,var(--purple-600),var(--blue-500))', boxShadow: '0 4px 20px var(--purple-glow)', gap: 8 }}>

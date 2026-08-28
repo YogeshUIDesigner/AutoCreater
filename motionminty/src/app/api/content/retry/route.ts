@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mockStore } from '@/lib/mockStore';
-import { createAIProvider } from '@/services/ai';
-import { createVideoProvider } from '@/services/video';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+
+// Re-importing runPipeline logic since this is a quick mock. 
+// In production, this would just push the jobId back to BullMQ/Redis.
+import { createAIProvider } from '@/services/ai';
 import { publishToFacebook, publishToInstagram } from '@/services/social';
 
 export async function POST(request: NextRequest) {
@@ -14,59 +16,48 @@ export async function POST(request: NextRequest) {
     }
     const userId = session.user.id;
 
-    const body = await request.json();
-    const { topic, niche, language, tone, audience, contentTypes, platforms, videoSettings, carouselSettings, schedule } = body;
-
-    if (!topic) {
-      return NextResponse.json({ error: 'Topic is required' }, { status: 400 });
+    const { jobId } = await request.json();
+    if (!jobId) {
+      return NextResponse.json({ error: 'Job ID required' }, { status: 400 });
     }
 
-    // Fetch user channels so we know what tokens to use
+    const job = mockStore.getJob(jobId);
+    if (!job || job.userId !== userId) {
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+    }
+
+    // Reset job
+    mockStore.updateJob(jobId, { status: 'QUEUED', progress: 0, error: undefined });
+    mockStore.addLog(jobId, 'Job retried by user');
+
+    // Fetch user channels
     const channels = await prisma.channel.findMany({
       where: { userId, connected: true },
     });
 
-    // Create the job
-    const job = mockStore.createJob({
-      userId,
-      title: topic,
-      niche: niche || 'General',
-      language: language || 'English',
-      contentTypes: contentTypes || ['long_video'],
-      platforms: platforms || ['youtube'],
+    // Re-run pipeline asynchronously
+    runPipeline(jobId, {
+      topic: job.title,
+      niche: job.niche,
+      language: job.language,
+      platforms: job.platforms,
+    }, channels).catch(err => {
+      mockStore.updateJob(jobId, { status: 'FAILED', error: err.message });
+      mockStore.addLog(jobId, `Pipeline failed: ${err.message}`);
     });
 
-    // Start async pipeline (in production this would push to BullMQ)
-    runPipeline(job.id, { topic, niche, language, tone, audience, videoSettings, carouselSettings, platforms }, channels).catch(err => {
-      mockStore.updateJob(job.id, { status: 'FAILED', error: err.message });
-      mockStore.addLog(job.id, `Pipeline failed: ${err.message}`);
-    });
-
-    return NextResponse.json({ jobId: job.id, status: 'QUEUED' }, { status: 201 });
+    return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('Content creation error:', err);
+    console.error('Retry error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function GET(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const userId = session.user.id;
-  
-  mockStore.seedMockJobs();
-  const jobs = mockStore.getAllJobs(userId);
-  return NextResponse.json({ jobs });
-}
-
-// Simulated pipeline runner
+// Copy of the simulated pipeline runner for the retry route
 async function runPipeline(jobId: string, params: Record<string, any>, channels: any[]) {
   const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
   const aiProvider = createAIProvider();
   
-  // High quality placeholder for testing (will be replaced by actual generation engine later)
   const TEST_IMAGE_URL = 'https://images.pexels.com/photos/3183150/pexels-photo-3183150.jpeg';
   const generatedCaption = `Exploring ${params.topic}! 🚀\n\nAI is transforming everything. Let us know your thoughts below! 👇\n\n#${(params.topic as string).split(' ')[0].replace(/[^a-zA-Z]/g, '')} #AI #Tech #MotionMinty`;
 
@@ -78,10 +69,10 @@ async function runPipeline(jobId: string, params: Record<string, any>, channels:
       await delay(1000);
     }},
     { name: 'Generating Media', status: 'GENERATING', progress: 60, action: async () => {
-      await delay(2000); // Simulate voice + image generation
+      await delay(2000);
     }},
     { name: 'Rendering Video', status: 'RENDERING', progress: 85, action: async () => {
-      await delay(2000); // Simulate video render
+      await delay(2000);
     }},
     { name: 'Publishing', status: 'PUBLISHING', progress: 95, action: async () => {
       const platforms = params.platforms as string[] || [];
@@ -97,8 +88,6 @@ async function runPipeline(jobId: string, params: Record<string, any>, channels:
             mockStore.addLog(jobId, `❌ Failed to publish to Facebook: ${result.error}`);
             throw new Error(`Facebook API Error: ${result.error}`);
           }
-        } else {
-          mockStore.addLog(jobId, '⚠️ Facebook platform selected but no Facebook page is connected.');
         }
       }
 
@@ -113,8 +102,6 @@ async function runPipeline(jobId: string, params: Record<string, any>, channels:
             mockStore.addLog(jobId, `❌ Failed to publish to Instagram: ${result.error}`);
             throw new Error(`Instagram API Error: ${result.error}`);
           }
-        } else {
-          mockStore.addLog(jobId, '⚠️ Instagram platform selected but no Instagram account is connected.');
         }
       }
     }},

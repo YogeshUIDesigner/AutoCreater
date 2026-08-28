@@ -73,24 +73,6 @@ export const mockStore = {
   },
 
   seedMockJobs(): void {
-    if (jobs.size > 0) return;
-    const mockTitles = [
-      '5 AI Tools That Replace Employees in 2026',
-      'ChatGPT vs Gemini vs Claude',
-      'How to Make Money with AI in 2026',
-    ];
-    mockTitles.forEach((title, i) => {
-      const statuses: JobStatus[] = ['GENERATING', 'SCHEDULED', 'PUBLISHED'];
-      mockStore.createJob({
-        userId: 'user_1',
-        title,
-        niche: 'AI & Technology',
-        language: 'English',
-        contentTypes: ['long_video', 'short', 'carousel'],
-        platforms: ['youtube', 'instagram'],
-      });
-      const jobId = Array.from(jobs.keys()).at(-1)!;
-      mockStore.updateJob(jobId, { status: statuses[i], progress: [65, 100, 100][i] });
-    });
+    // Disabled so real user tests aren't cluttered
   },
 };
